@@ -2,7 +2,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AdminUser;
-use App\Models\Property;
+use App\Modules\Property\Models\Property;
 use App\Models\PropertyUser;
 use App\Services\DatabaseService;
 use Illuminate\Http\Request;
@@ -39,11 +39,15 @@ class AuthController extends Controller
             // if the property code provided is correct and the admin_user id matches the owner_id on the property whose property_code is provided
             $correctProperty = Property::where('property_code', $validated['property_code'])->where('owner_id', $adminUser->id)->first();
             if (Auth::attempt(['email' => $validated['email'], 'password' => $validated['password']]) && $correctProperty) {
-                return response()->json([
-                    'message' => 'Login successful',
-                    'user'    => Auth::user(),
-                    'token'   => Auth::user()->createToken('API Token')->plainTextToken,
-                ]);
+                if(DatabaseService::switchConnection($validated['property_code'])){
+                    return response()->json([
+                        'message' => 'Login successful',
+                        'user'    => Auth::user(),
+                        'token'   => Auth::user()->createToken('API Token')->plainTextToken,
+                    ]);
+                } else {
+                    return response()->json(['error' => 'Could not switch']);
+                }
             }
             return response()->json(['error' => 'Invalid credentials for admin'], 401);
         } else if ($superAdmin) {

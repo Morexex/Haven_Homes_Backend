@@ -10,6 +10,9 @@ Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
 Route::post('/register_super_admin', [AuthController::class, 'registerSuperAdmin']);
 
+//included the routes of a module
+require base_path('app/Modules/Property/Routes/properties.php');
+
 // Protected routes (accessible only to authenticated users)
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/user', function (Request $request) {

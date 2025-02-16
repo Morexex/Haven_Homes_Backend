@@ -42,4 +42,27 @@ class DatabaseService
             throw new \Exception("Property with the given code '{$propertyCode}' does not exist.");
         }
     }
+
+
+    /**
+     * Switch database connection back to the haven_master database.
+     *
+     * @return void
+     */
+    public static function switchToMaster()
+    {
+        Config::set('database.connections.mysql', [
+            'driver'    => 'mysql',
+            'host'      => env('DB_HOST', '127.0.0.1'),
+            'port'      => env('DB_PORT', '3306'),
+            'database'  => env('DB_DATABASE', 'haven_master'), // Ensure DB_DATABASE is set to 'haven_master'
+            'username'  => env('DB_USERNAME', 'root'),
+            'password'  => env('DB_PASSWORD', ''),
+            'charset'   => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+        ]);
+
+        // Set the default connection back to the master database
+        DB::setDefaultConnection('mysql');
+    }
 }
