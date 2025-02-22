@@ -8,12 +8,6 @@ use App\Http\Controllers\Controller;
 
 class RoomCategoryController extends Controller
 {
-    protected $databaseService;
-
-    public function __construct(DatabaseService $databaseService)
-    {
-        $this->databaseService = $databaseService;
-    }
     /**
      * Display a listing of all room categories with their rooms and amenities.
      */

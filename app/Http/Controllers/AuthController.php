@@ -31,7 +31,7 @@ class AuthController extends Controller
 
         // Check if the user exists in the master database's admin_users table
         $adminUser  = AdminUser::where('email', $validated['email'])->first();
-        $superAdmin = AdminUser::where('email', $validated['email'])->first() && $adminUser->role === 'super_admin';
+        $superAdmin = $adminUser && $adminUser->role === 'super_admin';
 
         if ($adminUser) {
             // Authenticate the admin user
@@ -273,7 +273,7 @@ class AuthController extends Controller
     {
         // Normalize the property name to create a valid database name
         // Replace spaces with underscores and convert to lowercase
-        $normalizedPropertyName = strtolower(str_replace(' ', '_', $propertyName));
+        $normalizedPropertyName = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '', str_replace(' ', '_', $property->property_name)));
 
         // Ensure the database name is valid (replace any other invalid characters if needed)
         $dbName = $normalizedPropertyName;
@@ -333,7 +333,7 @@ class AuthController extends Controller
         $properties = Property::all();
 
         foreach ($properties as $property) {
-            $normalizedPropertyName = strtolower(str_replace(' ', '_', $property->property_name));
+            $normalizedPropertyName = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '', str_replace(' ', '_', $property->property_name)));
 
             config(['database.connections.property' => [
                 'driver'   => 'mysql',

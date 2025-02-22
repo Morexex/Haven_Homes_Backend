@@ -6,13 +6,6 @@ use App\Modules\Property\Controllers\AmenitiesController;
 use App\Modules\Property\Controllers\RoomCategoryController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('properties')->group(function () {
-    Route::get('/', [PropertyController::class, 'index']);
-    Route::get('/{id}', [PropertyController::class, 'show']);
-    Route::put('/{id}/update', [PropertyController::class, 'update']);
-    Route::delete('/{id}/delete', [PropertyController::class, 'destroy']);
-});
-
 Route::prefix('rooms')->group(function () {
     Route::get('/', [RoomController::class, 'index']); // Get all rooms
     Route::post('/', [RoomController::class, 'store']); // Create a room

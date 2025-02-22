@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Property;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
 
 class DatabaseService
 {
@@ -36,13 +37,22 @@ class DatabaseService
                 'collation' => 'utf8mb4_unicode_ci',
             ]);
 
+            // Purge the old connection to ensure the new one is used
+            DB::purge('property');
+            DB::reconnect('property');
+
             // Set the default connection to the new dynamic one
             DB::setDefaultConnection('property');
+
+            // Log the successful connection switch
+            Log::info("Switched to property database: {$databaseName}");
+
         } else {
+            // Log error if the property is not found
+            Log::error("Property with the given code '{$propertyCode}' does not exist.");
             throw new \Exception("Property with the given code '{$propertyCode}' does not exist.");
         }
     }
-
 
     /**
      * Switch database connection back to the haven_master database.
@@ -51,6 +61,7 @@ class DatabaseService
      */
     public static function switchToMaster()
     {
+        // Dynamically configure the connection for the master database
         Config::set('database.connections.mysql', [
             'driver'    => 'mysql',
             'host'      => env('DB_HOST', '127.0.0.1'),
@@ -62,7 +73,14 @@ class DatabaseService
             'collation' => 'utf8mb4_unicode_ci',
         ]);
 
+        // Purge the old connection to ensure the new one is used
+        DB::purge('mysql');
+        DB::reconnect('mysql');
+
         // Set the default connection back to the master database
         DB::setDefaultConnection('mysql');
+
+        // Log the successful switch back to the master database
+        Log::info("Switched back to the master database.");
     }
 }
