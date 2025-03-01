@@ -22,9 +22,8 @@ class DatabaseService
         $property = Property::where('property_code', $propertyCode)->first();
 
         if ($property) {
-            // Format the property name into a valid database name (e.g., "Luxury Brands" becomes "Luxury_Brands")
-            $databaseName = str_replace(' ', '_', $property->property_name);
-
+            // Format the property name into a valid database name (e.g., "Luxury Brands" becomes "luxury_brands")
+            $databaseName = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '', str_replace(' ', '_', $property->property_name)));
             // Dynamically configure the connection settings for the specific property database
             Config::set('database.connections.property', [
                 'driver'    => 'mysql',
@@ -44,8 +43,6 @@ class DatabaseService
             // Set the default connection to the new dynamic one
             DB::setDefaultConnection('property');
 
-            // Log the successful connection switch
-            Log::info("Switched to property database: {$databaseName}");
 
         } else {
             // Log error if the property is not found

@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -22,71 +23,47 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
-        // Validate the incoming request
         $validated = $request->validate([
-            'property_code' => 'required|string',
-            'email'         => 'required|email',
-            'password'      => 'required|string',
+            'email'    => 'required|email',
+            'password' => 'required|string',
         ]);
 
-        // Check if the user exists in the master database's admin_users table
-        $adminUser  = AdminUser::where('email', $validated['email'])->first();
-        $superAdmin = $adminUser && $adminUser->role === 'super_admin';
+        // Attempt login for admin user
+        if (Auth::guard('admin_user')->attempt([
+            'email'    => $validated['email'],
+            'password' => $validated['password'],
+        ])) {
+            $user = Auth::guard('admin_user')->user();
+            Log::info("Admin login successful: {$user->email}");
 
-        if ($adminUser) {
-            // Authenticate the admin user
-
-            // if the property code provided is correct and the admin_user id matches the owner_id on the property whose property_code is provided
-            $correctProperty = Property::where('property_code', $validated['property_code'])->where('owner_id', $adminUser->id)->first();
-            if (Auth::attempt(['email' => $validated['email'], 'password' => $validated['password']]) && $correctProperty) {
-                if(DatabaseService::switchConnection($validated['property_code'])){
-                    return response()->json([
-                        'message' => 'Login successful',
-                        'user'    => Auth::user(),
-                        'token'   => Auth::user()->createToken('API Token')->plainTextToken,
-                    ]);
-                } else {
-                    return response()->json(['error' => 'Could not switch']);
-                }
-            }
-            return response()->json(['error' => 'Invalid credentials for admin'], 401);
-        } else if ($superAdmin) {
-            // Authenticate the super admin user
-            if (Auth::attempt(['email' => $validated['email'], 'password' => $validated['password']])) {
-                return response()->json([
-                    'message' => 'Login successful',
-                    'user'    => Auth::user(),
-                    'token'   => Auth::user()->createToken('API Token')->plainTextToken,
-                ]);
-            }
-            return response()->json(['error' => 'Invalid credentials for super admin'], 401);
-        } else {
-            // If the user is not found in the master database, check the property database
-            try {
-                // Switch the database connection based on the property code
-                DatabaseService::switchConnection($validated['property_code']);
-            } catch (\Exception $e) {
-                return response()->json(['error' => 'Property not found.'], 404);
-            }
+            return response()->json([
+                'message' => 'Login successful',
+                'user'    => $user,
+                'token'   => $user->createToken('Admin API Token')->plainTextToken,
+            ], 200);
         }
 
-        // Attempt to authenticate the user in the property-specific database
+        // Attempt login for property user
         if (Auth::guard('property_user')->attempt([
             'email'    => $validated['email'],
             'password' => $validated['password'],
         ])) {
-            $propertyUser = Auth::guard('property_user')->user();
+            $user = Auth::guard('property_user')->user();
+            Log::info("Property user login successful: {$user->email}");
 
             return response()->json([
                 'message' => 'Login successful',
-                'user'    => $propertyUser,
-                'token'   => $propertyUser->createToken('API Token')->plainTextToken,
-            ]);
+                'user'    => $user,
+                'token'   => $user->createToken('Property API Token')->plainTextToken,
+            ], 200);
         }
 
-        // If authentication fails, return an error response
-        return response()->json(['error' => 'Unauthorized'], 401);
+        // If authentication fails
+        return response()->json([
+            'message' => 'Invalid credentials',
+        ], 401);
     }
+
 
     public function register(Request $request)
     {
@@ -144,7 +121,7 @@ class AuthController extends Controller
             // Commit the transaction after successful operations
             DB::commit();
 
-                                                                     // Create the property-specific database
+            // Create the property-specific database
             $this->createPropertyDatabase($property->property_name); // Use the property name for the database
 
             // Run the property-specific migrations
@@ -156,7 +133,6 @@ class AuthController extends Controller
                 'admin_user' => $user,
                 'property'   => $property,
             ], 201);
-
         } catch (\Exception $e) {
             // Rollback if something goes wrong
             DB::rollBack();
@@ -232,7 +208,6 @@ class AuthController extends Controller
                 'message' => 'User created successfully!',
                 'user'    => $user,
             ], 201);
-
         } catch (\Exception $e) {
             // Rollback if something goes wrong
             DB::rollBack();
@@ -247,25 +222,27 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        // Check if the user is authenticated via Sanctum (for API users)
         if (Auth::guard('admin_user')->check()) {
-            // Admin user logged out, clear the token
+            $user = Auth::guard('admin_user')->user();
+            if (method_exists($user, 'tokens')) {
+                $user->tokens()->delete(); // Revoke API tokens
+            }
             Auth::guard('admin_user')->logout();
-            return response()->json([
-                'message' => 'Admin user logged out successfully!',
-            ], 200);
-        } else if (Auth::guard('property_user')->check()) {
-            // Property user logged out, clear the token
-            Auth::guard('property_user')->logout();
-            return response()->json([
-                'message' => 'Property user logged out successfully!',
-            ], 200);
+        
+            return response()->json(['message' => 'Admin user logged out successfully!'], 200);
         }
-
-        // In case there's no authentication guard matched
-        return response()->json([
-            'message' => 'No authenticated user found.',
-        ], 401);
+    
+        if (Auth::guard('property_user')->check()) {
+            $user = Auth::guard('property_user')->user();
+            if (method_exists($user, 'tokens')) {
+                $user->tokens()->delete(); // Revoke API tokens
+            }
+            Auth::guard('property_user')->logout();
+        
+            return response()->json(['message' => 'Property user logged out successfully!'], 200);
+        }
+    
+        return response()->json(['message' => 'No authenticated user found.'], 401);
     }
 
     // Method to create the property-specific database
@@ -273,7 +250,7 @@ class AuthController extends Controller
     {
         // Normalize the property name to create a valid database name
         // Replace spaces with underscores and convert to lowercase
-        $normalizedPropertyName = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '', str_replace(' ', '_', $property->property_name)));
+        $normalizedPropertyName = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '', str_replace(' ', '_', $propertyName)));
 
         // Ensure the database name is valid (replace any other invalid characters if needed)
         $dbName = $normalizedPropertyName;
@@ -298,7 +275,7 @@ class AuthController extends Controller
         // Switch the database connection based on the property code
         DatabaseService::switchConnection($propertyCode);
 
-                                   // Purge and reconnect to ensure the correct database connection is used
+        // Purge and reconnect to ensure the correct database connection is used
         DB::purge('property');     // Purge any existing connections for 'property'
         DB::reconnect('property'); // Reconnect with the new configuration
 
@@ -362,5 +339,4 @@ class AuthController extends Controller
 
         return response()->json(['message' => 'Migrations run for all properties']);
     }
-
 }

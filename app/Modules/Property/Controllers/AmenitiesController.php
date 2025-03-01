@@ -1,10 +1,11 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Modules\Property\Controllers;
 
 use App\Modules\Property\Models\Amenity;
 use App\Modules\Property\Models\RoomCategory;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 
 class AmenitiesController extends Controller
 {

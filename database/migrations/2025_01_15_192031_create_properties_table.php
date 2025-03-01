@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('property_code')->unique();
             $table->string('property_name');
             $table->string('property_address');
-            $table->foreignId('owner_id')->constrained('admin_users');
+            //$table->foreignId('owner_id')->nullable()->constrained('admin_users')->cascadeOnDelete();
             $table->timestamps();
         });
     }

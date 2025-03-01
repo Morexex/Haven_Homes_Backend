@@ -14,7 +14,7 @@ class CreateAdminUsersTable extends Migration
             $table->string('email');
             $table->string('password');
             $table->enum('role', ['admin', 'user', 'tenant'])->default('user');
-            $table->foreignId('property_id')->nullable()->constrained('properties')->onDelete('cascade');
+            //$table->foreignId('property_id')->nullable()->constrained('properties')->onDelete('cascade');
             $table->timestamps();
         });
     }

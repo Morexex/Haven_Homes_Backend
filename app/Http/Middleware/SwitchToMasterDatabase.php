@@ -17,6 +17,7 @@ class SwitchToMasterDatabase
      */
     public function handle(Request $request, Closure $next)
     {
+        //dd('Middleware working here in Master');
         // Switch to the master database
         DatabaseService::switchToMaster();
 

@@ -5,6 +5,7 @@ namespace App\Modules\Property\Controllers;
 use Illuminate\Http\Request;
 use App\Modules\Property\Models\Property;
 use App\Models\PropertyUser;
+use App\Models\AdminUser;
 use App\Services\DatabaseService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;

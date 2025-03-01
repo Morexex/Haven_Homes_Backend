@@ -4,6 +4,9 @@ namespace App\Modules\Property\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\AdminUser;
+use App\Models\PropertyUser;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Property extends Model
 {

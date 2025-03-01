@@ -3,21 +3,12 @@
 namespace App\Modules\Property\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Helpers\DatabaseHelper;
-use App\Modules\Property\Models\Property;
 use App\Modules\Property\Models\Room;
 use App\Modules\Property\Models\RoomCategory;
-use App\Services\DatabaseService;
 use Illuminate\Http\Request;
 
 class RoomController extends Controller
 {
-    protected $databaseService;
-
-    public function __construct(DatabaseService $databaseService)
-    {
-        $this->databaseService = $databaseService;
-    }
     /**
      * Display a listing of all rooms.
      */
@@ -39,7 +30,6 @@ class RoomController extends Controller
             'category_id' => 'required|exists:room_categories,id',
             'quantity'    => 'required|integer|min:1',
             'floor'       => 'nullable|integer',
-            'property_code'=> 'required|'
         ]);
 
         $room = Room::create($validated);

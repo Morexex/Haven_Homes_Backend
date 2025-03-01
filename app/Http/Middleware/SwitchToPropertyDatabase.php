@@ -6,6 +6,7 @@ use Closure;
 use App\Services\DatabaseService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class SwitchToPropertyDatabase
 {
@@ -18,11 +19,14 @@ class SwitchToPropertyDatabase
      */
     public function handle(Request $request, Closure $next)
     {
+        //dd($request,'Middleware working here in property');
         try {
             // Retrieve the property code from the request (you can change this logic based on your use case)
             $propertyCode = $request->header('Property-Code');
 
             if ($propertyCode) {
+                // Force close any previous connection
+                //DB::disconnect();
                 // Log the property code being switched to
                 Log::info("Attempting to switch to property database with code: {$propertyCode}");
 
