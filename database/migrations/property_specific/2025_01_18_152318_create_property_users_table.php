@@ -19,6 +19,8 @@ return new class extends Migration
             $table->string('password');
             $table->string('role'); // User role
             $table->string('status')->default('active'); // User status
+            $table->unsignedBigInteger('room_id')->nullable();
+            $table->foreign('room_id')->references('id')->on('rooms')->onDelete('cascade');
             $table->rememberToken(); // For "remember me" functionality
             $table->timestamps(); // Created and updated timestamps
         });

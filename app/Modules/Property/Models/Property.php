@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\AdminUser;
 use App\Models\PropertyUser;
+use App\Modules\Property\Models\Models\PropertyImage;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Property extends Model
@@ -24,5 +25,9 @@ class Property extends Model
     {
         return $this->hasMany(PropertyUser::class);
     }
-}
 
+    public function images()
+    {
+        return $this->hasMany(PropertyImage::class);
+    }
+}

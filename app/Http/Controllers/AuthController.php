@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use App\Modules\Property\Models\Room;
 
 class AuthController extends Controller
 {
@@ -183,12 +184,17 @@ class AuthController extends Controller
     // function to register a new user in the property database
     public function registerUser(Request $request)
     {
-        // if product_code is provided, switch the database connection
-        if ($request->has('product_code')) {
-            $productCode = $request->product_code;
-            DatabaseService::switchConnection($productCode);
-        }
+        if ($request->has('email') && $request->has('room_id')) {
+            $email = $request->email;
+            $room  = Room::find($request->room_id);
+            $user  = PropertyUser::where('email', $email)->first();
 
+            if ($user && $room) {
+                return response()->json([
+                    'error' => 'User with the same email and room already exists.',
+                ], 400);
+            }
+        }
         try {
             DB::beginTransaction();
 
@@ -197,8 +203,9 @@ class AuthController extends Controller
                 'email'    => $request->email,
                 'phone'    => $request->phone,
                 'password' => Hash::make($request->password),
-                'role'     => 'user',
+                'role'     => $request->role?? 'user',
                 'status'   => 'active',
+                'room_id'  => $request->room_id,
             ]);
 
             // Commit the transaction after successful operations
@@ -218,6 +225,42 @@ class AuthController extends Controller
                 'details' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    public function fetchPropertyTenants ()
+    {
+        $tenants = PropertyUser::where('role', 'user')->get();
+
+        return response()->json(['tenants' => $tenants], 200);
+    }
+
+    public function fetchPropertyStaffs ()
+    {
+        $staffs = PropertyUser::where('role', 'staff')->get();
+
+        return response()->json(['staffs' => $staffs], 200);
+    }
+
+    //function to update property user details
+    public function updatePropertyUser(Request $request, $id)
+    {
+        $user = PropertyUser::find($id);
+
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
+        $user->update([
+            'name'     => $request->name ?? $user->name,
+            'email'    => $request->email ?? $user->email,
+            'phone'    => $request->phone ?? $user->phone,
+            'password' => $request->password ? Hash::make($request->password) : $user->password,
+            'role'     => $request->role ?? $user->role,
+            'status'   => $request->status ?? $user->status,
+            'room_id'  => $request->room_id ?? $user->room_id,
+        ]);
+
+        return response()->json(['message' => 'User updated successfully'], 200);
     }
 
     public function logout(Request $request)

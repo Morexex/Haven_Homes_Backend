@@ -31,13 +31,19 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::middleware([SwitchToPropertyDatabase::class])->group(function () {
         require base_path('app/Modules/Property/Routes/properties.php');
         Route::post('/property_users/register', [AuthController::class, 'registerUser']);
+        Route::get('/tenants', [AuthController::class, 'fetchPropertyTenants']);
+        Route::get('/staffs', [AuthController::class, 'fetchPropertyStaffs']);
+        Route::patch('/tenants/{id}/update', [AuthController::class, 'updatePropertyUser']);
     });
 
     // Property Management Routes
     Route::middleware([SwitchToMasterDatabase::class])->group(function () {
         Route::get('/properties', [PropertyController::class, 'index']);
-        Route::get('/properties/{id}', [PropertyController::class, 'show']);
+        Route::get('/properties/{property_code}', [PropertyController::class, 'show']);
         Route::put('/properties/{id}/update', [PropertyController::class, 'update']);
         Route::delete('/properties/{id}/delete', [PropertyController::class, 'destroy']);
+        Route::post('/properties/{id}/upload-images', [PropertyController::class, 'uploadImages']);
+        Route::get('/properties/{id}/images', [PropertyController::class, 'getPropertyImages']);
+        Route::post('/properties/{property_id}/images/{image_id}/update', [PropertyController::class, 'updateImage']);
     });
 });

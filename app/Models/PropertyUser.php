@@ -17,6 +17,7 @@ class PropertyUser extends Authenticatable
         'password',
         'role',
         'status',
+        'room_id',
     ];
 
     protected $hidden = [

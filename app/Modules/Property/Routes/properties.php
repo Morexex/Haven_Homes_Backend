@@ -12,6 +12,9 @@ Route::prefix('rooms')->group(function () {
     Route::get('{id}', [RoomController::class, 'show']); // Get room details
     Route::put('{id}', [RoomController::class, 'update']); // Update a room
     Route::delete('{id}', [RoomController::class, 'destroy']); // Delete a room
+    Route::post('/{id}/upload-images', [RoomController::class, 'uploadImages']);
+    Route::get('/{id}/images', [RoomController::class, 'getRoomImages']);
+    Route::post('/{room_id}/images/{image_id}/update', [RoomController::class, 'updateImage']);
 });
 
 Route::prefix('amenities')->group(function () {

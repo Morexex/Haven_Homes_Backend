@@ -4,36 +4,25 @@ namespace App\Modules\Property\Controllers;
 
 use Illuminate\Http\Request;
 use App\Modules\Property\Models\Property;
+use App\Modules\Property\Models\PropertyImage;
 use App\Models\PropertyUser;
 use App\Models\AdminUser;
-use App\Services\DatabaseService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
+
 
 
 class PropertyController extends Controller
 {
-    protected $databaseService;
-
-    public function __construct(DatabaseService $databaseService)
-    {
-        $this->databaseService = $databaseService;
-    }
-
     /**
      * List all properties.
      */
     public function index()
     {
-        // Switch to the master database for fetching all properties
-        try {
-            DatabaseService::switchToMaster();
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to switch to master database'], 500);
-        }
-
         // Fetch all properties
         $properties = Property::all();
 
@@ -44,17 +33,10 @@ class PropertyController extends Controller
     /**
      * Show a specific property.
      */
-    public function show($id)
+    public function show($property_code)
     {
-        // Switch to the master database for user verification
-        try {
-            DatabaseService::switchToMaster();
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to switch to master database'], 500);
-        }
-
-        // Find the property based on the given ID
-        $property = Property::findOrFail($id);
+        // Find the property based on the given property_code
+        $property = Property::where('property_code', $property_code)->firstOrFail();
 
         // Return the specific property as JSON response
         return response()->json($property);
@@ -75,13 +57,6 @@ class PropertyController extends Controller
             'property_address' => 'sometimes|string',
         ]);
 
-        // Switch to the master database for user verification
-        try {
-            DatabaseService::switchToMaster();
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to switch to master database'], 500);
-        }
-
         // Get the user (owner)
         $user = AdminUser::find($request->owner_id);
         // Find the property based on the given ID
@@ -100,14 +75,6 @@ class PropertyController extends Controller
             return response()->json(['error' => 'Only admins can perform this action'], 403);
         }
 
-        // Switch to the property database after verification
-        DatabaseService::switchConnection($property->code);
-
-        // Ensure the property code exists
-        if (!$property->code) {
-            return response()->json(['error' => 'Property code missing'], 400);
-        }
-
         // Update the property details
         $property->update([
             'property_name'    => $validated['property_name'] ?? $property->property_name,
@@ -116,6 +83,138 @@ class PropertyController extends Controller
 
         // Return a success response
         return response()->json(['message' => 'Property updated successfully'], 200);
+    }
+
+    public function uploadImages(Request $request, $id)
+    {
+        $property = Property::findOrFail($id);
+
+        $validated = $request->validate([
+            'images' => 'required|array',
+            'images.*' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'tag' => 'required|string|max:255',
+        ]);
+
+        $tag = Str::slug($validated['tag']); // Slugify the tag
+        $propertyName = Str::slug($property->property_name); // Slugify the property name
+        $imageData = [];
+
+        // ✅ Check if a logo already exists for this property
+        if ($tag === 'logo') {
+            $existingLogo = PropertyImage::where('property_id', $property->id)
+                ->where('tag', 'logo')
+                ->first();
+
+            if ($existingLogo) {
+                return response()->json([
+                    'error' => 'A logo already exists for this property. Please Update the existing logo.'
+                ], 400);
+            }
+        }
+
+        foreach ($validated['images'] as $image) {
+            // Generate a unique filename: propertyname_tag_timestamp.extension
+            $extension = $image->getClientOriginalExtension();
+            $filename = "{$propertyName}_{$tag}_" . time() . ".{$extension}";
+
+            // Store the image in 'public/properties' with the custom filename
+            $path = $image->storeAs('properties', $filename, 'public');
+
+            // Save image record in the database
+            $propertyImage = PropertyImage::create([
+                'property_id' => $property->id,
+                'image_path' => $path,
+                'tag' => $validated['tag'],
+            ]);
+
+            // Add image info to the response
+            $imageData[] = [
+                'id' => $propertyImage->id,
+                'image_url' => asset("storage/$path"),
+                'tag' => $validated['tag'],
+            ];
+        }
+
+        return response()->json([
+            'message' => 'Images uploaded successfully',
+            'images' => $imageData,
+        ], 200);
+    }
+    public function updateImage(Request $request, $property_id, $image_id)
+    {
+        // Find the existing image in the database
+        $propertyImage = PropertyImage::where('property_id', $property_id)
+            ->where('id', $image_id)
+            ->firstOrFail();
+    
+        // Validate request
+        $validated = $request->validate([
+            'tag' => 'required|string|max:255',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Image is optional
+        ]);
+
+        //Restrict multiple logos (only when changing the tag to 'logo')
+        if ($validated['tag'] === 'logo') {
+            $existingLogo = PropertyImage::where('property_id', $property_id)
+                ->where('tag', 'logo')
+                ->first();
+
+            if ($existingLogo) {
+                return response()->json([
+                    'error' => 'A logo already exists for this property. Please update the existing logo instead of adding a new one.'
+                ], 400);
+            }
+        }
+    
+        // Update tag (whether image is replaced or not)
+        $propertyImage->tag = $validated['tag'];
+        
+    
+        // If a new image is uploaded, replace the old one
+        if ($request->hasFile('image')) {
+            // Delete the old image from storage
+            Storage::disk('public')->delete($propertyImage->image_path);
+    
+            // Generate new filename
+            $property = Property::findOrFail($property_id);
+            $propertyName = Str::slug($property->property_name);
+            $tag = Str::slug($validated['tag']);
+            $extension = $request->file('image')->getClientOriginalExtension();
+            $filename = "{$propertyName}_{$tag}_" . time() . ".{$extension}";
+    
+            // Store the new image
+            $path = $request->file('image')->storeAs('properties', $filename, 'public');
+    
+            // Update image path in the database
+            $propertyImage->image_path = $path;
+        }
+    
+        // Save changes
+        $propertyImage->save();
+    
+        return response()->json([
+            'message' => 'Image updated successfully',
+            'image' => [
+                'id' => $propertyImage->id,
+                'image_url' => asset("storage/{$propertyImage->image_path}"),
+                'tag' => $propertyImage->tag,
+            ]
+        ], 200);
+    }
+
+    public function getPropertyImages($id)
+    {
+        $propertyImages = PropertyImage::where('property_id', $id)->get();
+
+        $formattedImages = $propertyImages->map(function ($image) {
+            return [
+                'id' => $image->id,
+                'image_url' => asset("storage/{$image->image_path}"),
+                'tag' => $image->tag,
+            ];
+        });
+
+        return response()->json(['images' => $formattedImages], 200);
     }
 
     /**

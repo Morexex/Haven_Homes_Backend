@@ -20,7 +20,7 @@ class CreateRoomsTable extends Migration
             $table->text('description')->nullable();
             $table->foreignId('category_id')->constrained('room_categories')->onDelete('cascade'); // Linked to category
             $table->integer('quantity')->default(1);
-            $table->integer('floor')->nullable();
+            $table->string('floor')->nullable();
             $table->timestamps();
         });  
     }  
