@@ -27,7 +27,6 @@ class AmenitiesController extends Controller
             'label'       => 'required|string|max:255',
             'description' => 'nullable|string',
             'size'        => 'nullable|string|max:255',
-            'image'       => 'nullable|string', // Store image as a URL or path
             'color'       => 'nullable|string|max:50',
             'condition'   => 'required|string|max:50',
             'category_id' => 'required|exists:room_categories,id',
@@ -66,7 +65,6 @@ class AmenitiesController extends Controller
         $validated = $request->validate([
             'label'       => 'sometimes|string|max:255',
             'description' => 'nullable|string',
-            'size'        => 'nullable|string|max:255',
             'image'       => 'nullable|string',
             'color'       => 'nullable|string|max:50',
             'condition'   => 'sometimes|string|max:50',

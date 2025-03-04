@@ -16,7 +16,6 @@ return new class extends Migration
             $table->string('label');
             $table->text('description')->nullable();
             $table->string('size')->nullable();
-            $table->string('image')->nullable();
             $table->string('color')->nullable();
             $table->string('condition')->nullable();
             $table->foreignId('category_id')->constrained('room_categories')->onDelete('cascade'); // Linked to category
