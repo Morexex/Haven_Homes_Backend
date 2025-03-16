@@ -4,6 +4,8 @@ use App\Modules\Property\Controllers\PropertyController;
 use App\Modules\Property\Controllers\RoomController;
 use App\Modules\Property\Controllers\AmenitiesController;
 use App\Modules\Property\Controllers\RoomCategoryController;
+use App\Modules\Property\Controllers\RoomChargeController;
+use App\Modules\Property\Controllers\RentalAgreementController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('rooms')->group(function () {
@@ -23,6 +25,22 @@ Route::prefix('amenities')->group(function () {
     Route::get('{id}', [AmenitiesController::class, 'show']); // Get amenity details
     Route::put('{id}', [AmenitiesController::class, 'update']); // Update an amenity
     Route::delete('{id}', [AmenitiesController::class, 'destroy']); // Delete an amenity
+});
+
+Route::prefix('charges')->group(function () {
+    Route::get('/', [RoomChargeController::class, 'index']); 
+    Route::post('/', [RoomChargeController::class, 'store']);
+    Route::get('{id}', [RoomChargeController::class, 'show']);
+    Route::put('{id}', [RoomChargeController::class, 'update']);
+    Route::delete('{id}', [RoomChargeController::class, 'destroy']);
+});
+
+Route::prefix('agreements')->group(function () {
+    Route::get('/', [RentalAgreementController::class, 'index']); 
+    Route::post('/', [RentalAgreementController::class, 'store']);
+    Route::get('{id}', [RentalAgreementController::class, 'show']);
+    Route::put('{id}', [RentalAgreementController::class, 'update']);
+    Route::delete('{id}', [RentalAgreementController::class, 'destroy']);
 });
 
 Route::prefix('room-categories')->group(function () {

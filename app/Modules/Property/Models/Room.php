@@ -12,11 +12,11 @@ class Room extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['label', 'is_vacant', 'description', 'category_id', 'quantity', 'floor'];
+    protected $guarded = [];
 
     public function category()
     {
-        return $this->belongsTo(RoomCategory::class, 'category_id');
+        return $this->belongsTo(RoomCategory::class);
     }
     public function images()
     {
@@ -26,6 +26,48 @@ class Room extends Model
     public function propertyUsers()
     {
         return $this->hasMany(PropertyUser::class);
+    }
+
+    public function roomCharges()
+    {
+        return $this->hasMany(RoomCharge::class);
+    }
+
+    public function rentalAgreements()
+    {
+        return $this->hasMany(RentalAgreement::class);
+    }
+
+    public function calculateTotalRoomCharges()
+    {
+
+        $totalCharges = 0;
+
+        foreach ($this->roomCharges as $charge) {
+            $totalCharges += $charge->amount;
+        }
+
+
+        return $totalCharges;
+
+    }
+
+    public function roomDetailsArray()
+    {
+        return [
+            'id' => $this->id,
+            'label' => $this->label,
+            'vacancy_status' => $this->is_vacant,
+            'description' => $this->description,
+            'category' => $this->category->label,
+            'quantity' => $this->quantity,
+            'floor' => $this->floor,
+            'user' => $this->propertyUsers->first(),
+            'rooms_amenities' => $this->category->amenities,
+            'room_charges' => $this->roomCharges,
+            'total_charges' => $this->calculateTotalRoomCharges(),
+            'agreements' => $this->rentalAgreements->first() ? $this->rentalAgreements->first()->roomAgreementArray() : null,
+        ];
     }
 }
 

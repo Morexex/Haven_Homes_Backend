@@ -4,6 +4,7 @@ namespace App\Modules\Property\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Modules\Property\Models\RoomCategory;
 
 class Amenity extends Model
 {

@@ -149,13 +149,13 @@ class RoomController extends Controller
      */
     public function show($id)
     {
-        $room = Room::with('category.amenities')->find($id);
-
+        $room = Room::where('id', $id)->first();
+    
         if (!$room) {
             return response()->json(['error' => 'Room not found'], 404);
         }
-
-        return response()->json($room);
+    
+        return response()->json(['room_details' => $room->roomDetailsArray()], 200);
     }
 
     /**
