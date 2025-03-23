@@ -21,11 +21,13 @@ class RentalAgreementController extends Controller
             'tenant_email' => 'required|email',
             'tenant_phone' => 'required|string',
             'room_agreement' => 'required|in:yes,no',
+            'room_decline_reason' => 'nullable|string',
             'breakdownCharges' => 'nullable|array',
             'charges_agreement' => 'nullable|array',
             'amenities_agreement' => 'nullable|array',
             'id_front' => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
             'id_back' => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
+            'property_code' => 'required|string',
         ]);
 
         // Store ID images
@@ -49,11 +51,12 @@ class RentalAgreementController extends Controller
             'tenant_email' => $validated['tenant_email'],
             'tenant_phone' => $validated['tenant_phone'],
             'room_agreement' => $validated['room_agreement'],
+            'room_decline_reason' => $validated['room_decline_reason'] ?? null,
             'charges_agreement' => $validated['charges_agreement'],
             'amenities_agreement' => $validated['amenities_agreement'],
             'id_front' => $idFrontPath,
             'id_back' => $idBackPath,
-            'property_code' => $request->header('Property-Code'),
+            'property_code' => $validated['property_code'],
         ]);
 
         return response()->json(['message' => 'Agreement submitted successfully'], 201);
@@ -86,15 +89,19 @@ class RentalAgreementController extends Controller
 
         $validated = $request->validate([
             'room_id' => 'required|exists:rooms,id',
+            'payment_date' => 'required|date',
+            'tenancy_start_date' => 'required|date',
             'tenant_name' => 'required|string',
             'tenant_email' => 'required|email',
             'tenant_phone' => 'required|string',
             'room_agreement' => 'required|in:yes,no',
+            'room_decline_reason' => 'nullable|string',
             'breakdownCharges' => 'nullable|array',
             'charges_agreement' => 'nullable|array',
             'amenities_agreement' => 'nullable|array',
             'id_front' => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
             'id_back' => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
+            'property_code' => 'required|string',
         ]);
 
         // Handle file uploads in a reusable function

@@ -24,6 +24,7 @@ return new class extends Migration
 
             // Agreement status
             $table->enum('room_agreement', ['yes', 'no']);
+            $table->enum('room_decline_reason'->nullable());
 
             // Charges with their agreement status stored together
             $table->json('charges_agreement')->nullable();

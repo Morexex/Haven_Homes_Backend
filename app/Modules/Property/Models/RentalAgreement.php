@@ -45,6 +45,7 @@ class RentalAgreement extends Model
             'tenant_email' => $this->tenant_email,
             'tenant_phone' => $this->tenant_phone,
             'room_agreement' => $this->room_agreement,
+            'room_decline_reason' => $this->room_decline_reason,
             'charges_agreement' => $this->charges_agreement,
             'amenities_agreement' => $this->amenities_agreement,
             // Get the URLs for the front and back images
