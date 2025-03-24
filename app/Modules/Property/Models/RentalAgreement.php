@@ -33,14 +33,19 @@ class RentalAgreement extends Model
         ];
     }
 
+    public function humanReadableDate($date)
+    {
+        return $date->format('jS F Y');
+    }
+
 
     public function roomAgreementArray()
     {
         return [
             'id' => $this->id,
             'room_id' => $this->room_id,
-            'payment_date' => $this->payment_date,
-            'tenancy_start_date' => $this->tenancy_start_date,
+            'payment_date' => $this->humanReadableDate($this->payment_date),
+            'tenancy_start_date' => $this->humanReadableDate($this->tenancy_start_date),
             'tenant_name' => $this->tenant_name,
             'tenant_email' => $this->tenant_email,
             'tenant_phone' => $this->tenant_phone,

@@ -5,6 +5,7 @@ namespace App\Modules\Property\Controllers;
 use App\Modules\Property\Models\RoomCategory;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Carbon\Carbon;
 
 class RoomCategoryController extends Controller
 {
@@ -13,8 +14,12 @@ class RoomCategoryController extends Controller
      */
     public function index()
     {   
-
-        $categories = RoomCategory::with(['rooms', 'amenities'])->get();
+        $categories = RoomCategory::with('rooms', 'amenities')->get();
+        foreach ($categories as $category) {
+            $category->formatted_created_at = Carbon::parse($category->created_at)->format('jS F Y');
+            //rooms count
+            $category->rooms_count = $category->rooms->count();
+        }
         return response()->json($categories);
     }
 
@@ -39,6 +44,8 @@ class RoomCategoryController extends Controller
     public function show($id)
     {
         $category = RoomCategory::with(['rooms', 'amenities'])->find($id);
+
+        $category->formatted_created_at = Carbon::parse($category->created_at)->format('jS F Y');
 
         if (!$category) {
             return response()->json(['error' => 'Room category not found'], 404);

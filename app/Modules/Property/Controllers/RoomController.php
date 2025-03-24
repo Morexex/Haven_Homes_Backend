@@ -158,6 +158,13 @@ class RoomController extends Controller
         return response()->json(['room_details' => $room->roomDetailsArray()], 200);
     }
 
+    //show rooms per category
+    public function showRoomsPerCategory($id)
+    {
+        $rooms = Room::where('category_id', $id)->get();
+        return response()->json($rooms);
+    }
+
     /**
      * Update an existing room.
      */

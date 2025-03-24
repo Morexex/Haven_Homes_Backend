@@ -8,6 +8,7 @@ use App\Modules\Property\Models\RentalAgreement;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class RentalAgreementController extends Controller
 {
@@ -66,6 +67,11 @@ class RentalAgreementController extends Controller
     public function index()
     {
         $agreements = RentalAgreement::with('room')->get();
+        foreach ($agreements as $agreement) {
+            $agreement->formatted_payment_date = Carbon::parse($agreement->payment_date)->format('jS F Y');
+            $agreement->formatted_tenancy_start_date = Carbon::parse($agreement->tenancy_start_date)->format('jS F Y');
+            $agreement->room->is_vacant = $agreement->room->is_vacant ? 'Occupied' : 'Vacant';
+        }
         return response()->json($agreements);
     }
 
