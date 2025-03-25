@@ -6,6 +6,7 @@ use App\Modules\Property\Models\Amenity;
 use App\Modules\Property\Models\RoomCategory;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Carbon\Carbon;
 
 class AmenitiesController extends Controller
 {
@@ -15,6 +16,13 @@ class AmenitiesController extends Controller
     public function index()
     {
         $amenities = Amenity::with('category')->get();
+
+        $amenities = Amenity::with('category')->get();
+        foreach ($amenities as $amenity) {
+            $amenity->formatted_created_at = Carbon::parse($amenity->created_at)->format('jS F Y');
+            //rooms count
+            $amenity->category_name = $amenity->category->label;
+        }
         return response()->json($amenities);
     }
 

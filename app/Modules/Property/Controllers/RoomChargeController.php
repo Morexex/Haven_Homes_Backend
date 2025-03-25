@@ -6,12 +6,19 @@ use App\Http\Controllers\Controller;
 use App\Modules\Property\Models\RoomCharge;
 
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class RoomChargeController extends Controller
 {
     public function index()
     {
-        return response()->json(RoomCharge::with('room')->get());
+        $charges = RoomCharge::with('room')->get();
+        foreach ($charges as $charge) {
+            $charge->formatted_created_at = Carbon::parse($charge->created_at)->format('jS F Y');
+            //rooms count
+            $charge->room_name = $charge->room->label;
+        }
+        return response()->json($charges);
     }
 
     public function store(Request $request)
@@ -34,23 +41,36 @@ class RoomChargeController extends Controller
         return response()->json($roomCharge->load('room'));
     }
 
-    public function update(Request $request, RoomCharge $roomCharge)
+    public function update(Request $request, $id)
     {
-        $request->validate([
-            'amount' => 'numeric',
-            'charge_type' => 'string',
+        $charge = RoomCharge::find($id);
+
+        if (!$charge) {
+            return response()->json(['error' => 'Amenity not found'], 404);
+        }
+
+        $validated = $request->validate([
+            'room_id' => 'required|exists:rooms,id',
+            'amount' => 'required|numeric',
+            'charge_type' => 'required|string',
             'description' => 'nullable|string',
-            'effective_date' => 'date',
+            'effective_date' => 'required|date',
         ]);
 
-        $roomCharge->update($request->all());
+        $charge->update($validated);
 
-        return response()->json(['message' => 'Charge updated successfully', 'data' => $roomCharge]);
+        return response()->json(['message' => 'Charge updated successfully', 'charge' => $charge]);
     }
 
-    public function destroy(RoomCharge $roomCharge)
+    public function destroy($id)
     {
-        $roomCharge->delete();
+        $charge = RoomCharge::find($id);
+
+        if (!$charge) {
+            return response()->json(['error' => 'Charge not found'], 404);
+        }
+
+        $charge->delete();
         return response()->json(['message' => 'Charge deleted successfully']);
     }
 }

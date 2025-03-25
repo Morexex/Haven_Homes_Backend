@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use App\Modules\Property\Models\RoomImage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
 
 class RoomController extends Controller
 {
@@ -18,6 +19,12 @@ class RoomController extends Controller
     public function index()
     {
         $rooms = Room::with('category.amenities')->get();
+        foreach ($rooms as $room) {
+            $room->formatted_created_at = Carbon::parse($room->created_at)->format('jS F Y');
+            //rooms count
+            $room->is_vacant = $room->is_vacant ? 'Vacant' : 'Occupied';
+            $room->category_name = $room->category->label;
+        }
         return response()->json($rooms);
     }
 
