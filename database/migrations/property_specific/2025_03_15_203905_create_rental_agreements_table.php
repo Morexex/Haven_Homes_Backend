@@ -24,7 +24,7 @@ return new class extends Migration
 
             // Agreement status
             $table->enum('room_agreement', ['yes', 'no']);
-            $table->enum('room_decline_reason'->nullable());
+            $table->string('room_decline_reason')->nullable();
 
             // Charges with their agreement status stored together
             $table->json('charges_agreement')->nullable();
@@ -36,7 +36,7 @@ return new class extends Migration
             $table->string('id_front')->nullable();
             $table->string('id_back')->nullable();
 
-            $table->foreignId('property_code')->constrained()->onDelete('cascade');
+            $table->string('property_code');
             $table->timestamps();
         });
     }
