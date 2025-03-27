@@ -13,4 +13,9 @@ class Complaint extends Model
     {
         return $this->belongsTo(PropertyUser::class, 'complainant_id');
     }
+
+    public function assignee()
+    {
+        return $this->belongsTo(PropertyUser::class, 'assigned_to');
+    }
 }

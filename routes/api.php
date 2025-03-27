@@ -30,6 +30,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Property Module Routes
     Route::middleware([SwitchToPropertyDatabase::class])->group(function () {
         require base_path('app/Modules/Property/Routes/properties.php');
+        require base_path('app/Modules/Comms/Routes/comms.php');
         Route::post('/property_users/register', [AuthController::class, 'registerUser']);
         Route::get('/tenants', [AuthController::class, 'fetchPropertyTenants']);
         Route::get('/staffs', [AuthController::class, 'fetchPropertyStaffs']);
