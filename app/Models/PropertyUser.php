@@ -10,21 +10,13 @@ use App\Modules\Comms\Models\Complaint;
 use App\Modules\Comms\Models\Notice;
 use App\Modules\Comms\Models\Vacation;
 use App\Modules\Comms\Models\BulkCommunicationRecipient;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class PropertyUser extends Authenticatable
 {
-    use HasApiTokens, Notifiable;
+    use HasFactory, Notifiable, HasApiTokens;
 
     protected $guarded = [];
-    // protected $fillable = [
-    //     'name',
-    //     'email',
-    //     'phone',
-    //     'password',
-    //     'role',
-    //     'status',
-    //     'room_id',
-    // ];
 
     protected $hidden = [
         'password',

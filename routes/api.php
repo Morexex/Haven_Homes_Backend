@@ -12,9 +12,10 @@ use App\Http\Middleware\SwitchToPropertyDatabase;
  */
 Route::middleware([SwitchToMasterDatabase::class])->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login', [AuthController::class, 'login']);
     Route::post('/register_super_admin', [AuthController::class, 'registerSuperAdmin']);
 });
+
+Route::post('/login', [AuthController::class, 'login']);
 
 /**
  * Protected Routes (Require Authentication)

@@ -22,49 +22,66 @@ class AuthController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
+
+    public function fetchPropertyUsers()
+    {
+        //if a
+    }
+    
     public function login(Request $request)
     {
-        $validated = $request->validate([
-            'email'    => 'required|email',
-            'password' => 'required|string',
-        ]);
+        try {
+            $validated = $request->validate([
+                'email'    => 'required|email',
+                'password' => 'required|string',
+                'property_code' => 'nullable|string',
+            ]);
+            $guards = ['admin_user', 'property_user'];
+            try {
+                foreach ($guards as $guard) {
+                    if ($guard === 'property_user') {
+                        $propertyCode = $validated['property_code'];
+                        if ($propertyCode) {
+                            DatabaseService::switchConnection($propertyCode);
+                        } else {
+                            return response()->json([
+                                'error' => 'Property not found for the given user.',
+                            ], 404);
+                        }
+                    }
+                    if (Auth::guard($guard)->attempt([
+                        'email'    => $validated['email'],
+                        'password' => $validated['password'],
+                    ])) {
+                        $user = Auth::guard($guard)->user();
+                        Log::info("{$guard} login successful: {$user->email}");
 
-        // Attempt login for admin user
-        if (Auth::guard('admin_user')->attempt([
-            'email'    => $validated['email'],
-            'password' => $validated['password'],
-        ])) {
-            $user = Auth::guard('admin_user')->user();
-            Log::info("Admin login successful: {$user->email}");
+                        return response()->json([
+                            'message' => 'Login successful',
+                            'guard'   => $guard, // Indicating which guard was used
+                            'user'    => $user,
+                            'token'   => $user->createToken(ucfirst($guard) . ' API Token')->plainTextToken,
+                        ], 200);
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error('Error during login attempt: ' . $e->getMessage());
 
+                return response()->json([
+                    'error'   => 'An error occurred during login.',
+                    'details' => $e->getMessage(),
+                ], 500);
+            }
             return response()->json([
-                'message' => 'Login successful',
-                'user'    => $user,
-                'token'   => $user->createToken('Admin API Token')->plainTextToken,
-            ], 200);
-        }
-
-        // Attempt login for property user
-        if (Auth::guard('property_user')->attempt([
-            'email'    => $validated['email'],
-            'password' => $validated['password'],
-        ])) {
-            $user = Auth::guard('property_user')->user();
-            Log::info("Property user login successful: {$user->email}");
-
+                'message' => 'Invalid credentials',
+            ], 401);
+        } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Login successful',
-                'user'    => $user,
-                'token'   => $user->createToken('Property API Token')->plainTextToken,
-            ], 200);
+                'error'   => 'An error occurred during login.',
+                'details' => $e->getMessage(),
+            ], 500);
         }
-
-        // If authentication fails
-        return response()->json([
-            'message' => 'Invalid credentials',
-        ], 401);
     }
-
 
     public function register(Request $request)
     {
