@@ -16,5 +16,10 @@ class Property extends Model
     {
         return $this->hasMany(AdminUser::class);
     }
+
+    public function property_users()
+    {
+        return $this->hasMany(PropertyUser::class);
+    }
 }
 

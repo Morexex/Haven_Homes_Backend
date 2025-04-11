@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use App\Modules\Property\Models\Room;
+use Laravel\Passport\Client;
+
 
 class AuthController extends Controller
 {
@@ -27,55 +29,148 @@ class AuthController extends Controller
     {
         //if a
     }
-    
+
+    public function ensureOAuthClientExists()
+    {
+        // Fetch the OAuth client with password_client flag set to true
+        $oauthClient = DB::table('oauth_clients')->where('password_client', true)->first();
+
+        if (!$oauthClient) {
+            // If no OAuth client exists, populate from env
+            $accessClientSecret = env('PASSPORT_PERSONAL_ACCESS_CLIENT_SECRET');
+            $grantClientSecret = env('PASSPORT_PASSWORD_GRANT_CLIENT_SECRET');
+
+
+            DB::table('oauth_clients')->insert([
+                'name'                   => 'Property Database Personal Access Client',
+                'secret'                 => $accessClientSecret,
+                'redirect'               => env('APP_URL'),
+                'personal_access_client' => true,
+                'password_client'        => false,
+                'revoked'                => false,
+                'created_at'             => now(),
+                'updated_at'             => now(),
+            ]);
+
+            DB::table('oauth_clients')->insert([
+                'name'                   => 'Property Database Password Grant Client',
+                'secret'                 => $grantClientSecret,
+                'provider'               => 'users',
+                'redirect'               => env('APP_URL'),
+                'personal_access_client' => false,
+                'password_client'        => true,
+                'revoked'                => false,
+                'created_at'             => now(),
+                'updated_at'             => now(),
+            ]);
+
+            $clientId = env('PASSPORT_PERSONAL_ACCESS_CLIENT_ID');
+
+            DB::table('oauth_personal_access_clients')->insert([
+                'client_id'  => $clientId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            logger("✅ Created OAuth client with ID: {$clientId} and secret: {$accessClientSecret}");
+
+            return (object) [
+                'id' => $clientId,
+                'secret' => $accessClientSecret,
+            ];
+        }
+
+        return $oauthClient;
+    }
+
     public function login(Request $request)
     {
         try {
             $validated = $request->validate([
-                'email'    => 'required|email',
-                'password' => 'required|string',
+                'email'         => 'required|email',
+                'password'      => 'required|string',
                 'property_code' => 'nullable|string',
             ]);
-            $guards = ['admin_user', 'property_user'];
-            try {
-                foreach ($guards as $guard) {
-                    if ($guard === 'property_user') {
-                        $propertyCode = $validated['property_code'];
-                        if ($propertyCode) {
-                            DatabaseService::switchConnection($propertyCode);
-                        } else {
-                            return response()->json([
-                                'error' => 'Property not found for the given user.',
-                            ], 404);
-                        }
-                    }
-                    if (Auth::guard($guard)->attempt([
-                        'email'    => $validated['email'],
-                        'password' => $validated['password'],
-                    ])) {
-                        $user = Auth::guard($guard)->user();
-                        Log::info("{$guard} login successful: {$user->email}");
 
+            $guards = ['admin_user', 'property_user'];
+
+            foreach ($guards as $guard) {
+                if ($guard === 'property_user') {
+                    $propertyCode = $validated['property_code'];
+                    if ($propertyCode) {
+                        DatabaseService::switchConnection($propertyCode);
+                        logger("🔄 Switched to property database: {$propertyCode}");
+
+                        // Ensure OAuth client exists in the switched database
+                        $client = $this->ensureOAuthClientExists();
+
+                        // Log the OAuth client just fetched
+                        logger("📌 OAuth client fetched: " . json_encode($client));
+
+                        // Validate that client is not null
+                        if (is_null($client)) {
+                            logger("⚠️ OAuth client is null. Returning error.");
+                            return response()->json([
+                                'error' => 'OAuth client is missing. Please contact support.',
+                            ], 500);
+                        }
+
+                        // Check if the client has a valid secret
+                        if (empty($client->secret)) {
+                            logger("⚠️ OAuth client secret is missing or empty");
+                            return response()->json([
+                                'error' => 'OAuth client secret is missing or empty. Please contact support.',
+                            ], 500);
+                        }
+                    } else {
                         return response()->json([
-                            'message' => 'Login successful',
-                            'guard'   => $guard, // Indicating which guard was used
-                            'user'    => $user,
-                            'token'   => $user->createToken(ucfirst($guard) . ' API Token')->plainTextToken,
-                        ], 200);
+                            'error' => 'Property not found for the given user.',
+                        ], 404);
                     }
                 }
-            } catch (\Exception $e) {
-                Log::error('Error during login attempt: ' . $e->getMessage());
 
-                return response()->json([
-                    'error'   => 'An error occurred during login.',
-                    'details' => $e->getMessage(),
-                ], 500);
+                $user = Auth::guard($guard)->getProvider()->retrieveByCredentials([
+                    'email'    => $validated['email'],
+                    'password' => $validated['password'],
+                ]);
+
+                if ($user && Auth::guard($guard)->getProvider()->validateCredentials($user, $validated)) {
+                    // Fetch OAuth client again to ensure it's available
+                    $client = DB::table('oauth_clients')->where('password_client', true)->first();
+
+                    // Log the OAuth client details
+                    logger("📌 OAuth client fetched again: " . json_encode($client));
+
+                    // Check if client is valid and not null
+                    if (is_null($client) || !isset($client->id) || !isset($client->secret) || empty($client->secret)) {
+                        logger("⚠️ Missing OAuth client or secret. OAuth client details: " . json_encode($client));
+                        return response()->json([
+                            'error' => 'OAuth client missing or has no secret. Please contact support.',
+                        ], 500);
+                    }
+                    logger("user: " . json_encode($user) . ", " .
+                    "guard: " . $guard . ", " .
+                    "client: " . json_encode($client),);
+                    // Create Passport token
+                    $token = $user->createToken(ucfirst($guard) . ' API Token', [], $client->id)->accessToken;
+
+                    logger("🔑 Token created for user: {$user->email}, token: {$token}");
+
+                    return response()->json([
+                        'message' => 'Login successful',
+                        'guard'   => $guard,
+                        'user'    => $user,
+                        'token'   => $token,
+                    ], 200);
+                }
             }
+
             return response()->json([
                 'message' => 'Invalid credentials',
             ], 401);
         } catch (\Exception $e) {
+            Log::error('Error during login attempt: ' . $e->getMessage());
+
             return response()->json([
                 'error'   => 'An error occurred during login.',
                 'details' => $e->getMessage(),
@@ -281,29 +376,19 @@ class AuthController extends Controller
     }
 
     public function logout(Request $request)
-    {
-        if (Auth::guard('admin_user')->check()) {
-            $user = Auth::guard('admin_user')->user();
-            if (method_exists($user, 'tokens')) {
-                $user->tokens()->delete(); // Revoke API tokens
-            }
-            Auth::guard('admin_user')->logout();
-        
-            return response()->json(['message' => 'Admin user logged out successfully!'], 200);
-        }
-    
-        if (Auth::guard('property_user')->check()) {
-            $user = Auth::guard('property_user')->user();
-            if (method_exists($user, 'tokens')) {
-                $user->tokens()->delete(); // Revoke API tokens
-            }
-            Auth::guard('property_user')->logout();
-        
-            return response()->json(['message' => 'Property user logged out successfully!'], 200);
-        }
-    
-        return response()->json(['message' => 'No authenticated user found.'], 401);
+{
+    if (Auth::check()) {
+        // Get the authenticated user's current token and revoke it
+        $request->user()->token()->revoke();
+
+        return response()->json([
+            'message' => 'Successfully logged out'
+        ]);
     }
+
+    return response()->json(['error' => 'User not authenticated'], 401);
+}
+
 
     // Method to create the property-specific database
     protected function createPropertyDatabase($propertyName)

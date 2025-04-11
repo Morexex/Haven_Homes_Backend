@@ -42,7 +42,7 @@ class SwitchToPropertyDatabase
         } catch (\Exception $e) {
             // Log the error and handle it
             Log::error("Error switching to property database: " . $e->getMessage());
-            return response()->json(['error' => 'Database connection error.'], 500);
+            return response()->json(['error' => 'Database connection error: ' . $e->getMessage()], 500);
         }
     }
 }

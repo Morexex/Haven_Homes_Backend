@@ -20,7 +20,7 @@ Route::post('/login', [AuthController::class, 'login']);
 /**
  * Protected Routes (Require Authentication)
  */
-Route::middleware(['auth:sanctum'])->group(function () {
+//Route::middleware(['auth.dynamic:admin_user,property_user'])->group(function () {
     
     // General authenticated user info
     Route::get('/user', function (Request $request) {
@@ -48,4 +48,4 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/properties/{id}/images', [PropertyController::class, 'getPropertyImages']);
         Route::post('/properties/{property_id}/images/{image_id}/update', [PropertyController::class, 'updateImage']);
     });
-});
+//});

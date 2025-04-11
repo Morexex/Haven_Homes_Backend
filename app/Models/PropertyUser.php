@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
+use Laravel\Passport\HasApiTokens;
 use App\Modules\Property\Models\Room;
 use App\Modules\Comms\Models\Complaint;
 use App\Modules\Comms\Models\Notice;
@@ -25,7 +25,7 @@ class PropertyUser extends Authenticatable
 
     public function room()
     {
-        return $this->belongsTo(Room::class, 'id', 'rood_id');
+        return $this->belongsTo(Room::class, 'room_id', 'id');
     }
 
     public function complaints()

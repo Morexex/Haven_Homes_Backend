@@ -21,7 +21,7 @@ class Property extends Model
         return $this->hasMany(AdminUser::class);
     }
 
-    public function users(): HasMany
+    public function property_users(): HasMany
     {
         return $this->hasMany(PropertyUser::class);
     }

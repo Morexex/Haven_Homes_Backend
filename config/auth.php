@@ -9,19 +9,14 @@ return [
 
     'guards' => [
 
-        'property_user' => [
-            'driver' => 'session',
-            'provider' => 'property_users',
-        ],
-
         'admin_user' => [
-            'driver' => 'session',
+            'driver' => 'passport',
             'provider' => 'admin_users',
         ],
 
-        'api' => [ // ✅ Add API guard for Sanctum
-            'driver' => 'sanctum',
-            'provider' => null, // Allow multiple user models to authenticate
+        'property_user' => [
+            'driver' => 'passport',
+            'provider' => 'property_users',
         ],
     ],
 
