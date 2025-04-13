@@ -25,8 +25,8 @@ return new class extends Migration
             $table->text('resolution_notes')->nullable();
             $table->dateTime('resolved_at')->nullable();
             $table->timestamps();
-            $table->foreign('complainant_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('assigned_to')->references('id')->on('users')->onDelete('set null');
+            $table->foreign('complainant_id')->references('id')->on('property_users')->onDelete('cascade');
+            $table->foreign('assigned_to')->references('id')->on('property_users')->onDelete('set null');
         });
     }
 

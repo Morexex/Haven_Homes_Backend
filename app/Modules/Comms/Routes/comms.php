@@ -20,6 +20,7 @@ Route::prefix('complaints')->group(function () {
     Route::get('{id}', [ComplaintsController::class, 'show']); 
     Route::put('{id}', [ComplaintsController::class, 'update']);
     Route::delete('{id}', [ComplaintsController::class, 'destroy']);
+    Route::post('{complaint}/messages', [ComplaintsController::class, 'addMessage']);
 });
 
 Route::prefix('notices')->group(function () {

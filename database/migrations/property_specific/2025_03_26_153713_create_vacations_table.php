@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('vacations', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('tenant_id')->constrained('property_users')->onDelete('cascade');
             $table->foreignId('room_id')->constrained('rooms')->onDelete('cascade');
             $table->text('reason')->nullable();
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');

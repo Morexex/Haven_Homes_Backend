@@ -23,7 +23,7 @@ return new class extends Migration
             $table->timestamp('expires_at')->nullable(); // Expiration date
             $table->timestamps();
 
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('user_id')->references('id')->on('property_users')->onDelete('cascade');
         });
     }
 

@@ -38,6 +38,16 @@ Route::post('/login', [AuthController::class, 'login']);
         Route::patch('/tenants/{id}/update', [AuthController::class, 'updatePropertyUser']);
     });
 
+    Route::get('/download-image/{filename}', function ($filename) {
+        $path = storage_path('app/public/messages/' . $filename);
+        if (!file_exists($path)) {
+            abort(404);
+        }
+    
+        return response()->download($path);
+    });
+
+
     // Property Management Routes
     Route::middleware([SwitchToMasterDatabase::class])->group(function () {
         Route::get('/properties', [PropertyController::class, 'index']);
