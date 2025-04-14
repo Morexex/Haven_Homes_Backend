@@ -26,7 +26,7 @@ class ComplaintsController extends Controller
                 'created_at' => $complaint->created_at,
                 'updated_at' => $complaint->updated_at,
                 'complainant_name' => $complaint->complainant->name ?? null,
-                'assignee_name' => $complaint->assignee->name ?? null,
+                'assignee_name' => isset($complaint->assignee->name) ? $complaint->assignee->name : null,
                 'priority' => $complaint->priority,
                 'incident_date' => $complaint->incident_date,
                 'category' => $complaint->category,
@@ -170,7 +170,7 @@ class ComplaintsController extends Controller
     {
         $validated = $request->validate([
             'status' => 'nullable|in:Pending,In Progress,Resolved,Rejected',
-            'assigned_to' => 'nullable|exists:users,id',
+            'assigned_to' => 'nullable|exists:property_users,id',
             'resolution_notes' => 'nullable|string',
             'resolved_at' => 'nullable|date',
         ]);
