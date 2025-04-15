@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\Comms\Models\ComplaintMessage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Modules\Comms\Models\ServiceReview;
 
 class ComplaintsController extends Controller
 {
@@ -30,6 +31,7 @@ class ComplaintsController extends Controller
                 'priority' => $complaint->priority,
                 'incident_date' => $complaint->incident_date,
                 'category' => $complaint->category,
+                'is_reviewed' => $complaint->serviceReview ? true : false,
                 'messages' => $complaint->messages->map(function ($message) {
                     return [
                         'id' => $message->id,
@@ -236,6 +238,43 @@ class ComplaintsController extends Controller
             'message' => 'Message added successfully',
             'data' => $message,  // Return the newly created message
         ], 200);
+    }
+
+    public function rateService(Request $request)
+    {
+        $validated = $request->validate([
+            'satisfied' => 'nullable|in:yes,no',
+            'feedback' => 'nullable|string',
+            'rating' => 'required|numeric|min:0|max:5',
+            'complaint_id' => 'required|exists:complaints,id',
+        ]);
+
+        // Convert "yes"/"no" to boolean
+        $satisfied = $validated['satisfied'] === 'yes';
+
+        $review = ServiceReview::create([
+            'satisfied' => $validated['satisfied'] !== null ? $satisfied : null,
+            'feedback' => $validated['feedback'],
+            'rating' => $validated['rating'],
+            'complaint_id' => $validated['complaint_id'],
+        ]);
+
+        //send notification
+        $complaint = Complaint::find($validated['complaint_id']);
+
+        $noticeData = [
+            'title' => 'Service Review Submitted: ' . $complaint->title,
+            'message' => 'A service review has been submitted for your complaint Thread.',
+            'type' => 'complaint',
+            'source_id' => $complaint->id,
+            'source_type' => Complaint::class,
+            'user_id' => $complaint->complainant_id,
+            'published_at' => now(),
+        ];
+
+        $notice = Notice::create($noticeData);
+
+        return response()->json(['message' => 'Review submitted successfully.']);
     }
 
     // Delete a complaint

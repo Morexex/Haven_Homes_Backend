@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('sender');
             $table->text('message');
+            //added ststus column
+            $table->string('status')->default('Unread');
             $table->string('attachment_url')->nullable();
             $table->timestamps();
         

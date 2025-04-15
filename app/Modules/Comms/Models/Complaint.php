@@ -5,6 +5,7 @@ namespace App\Modules\Comms\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\PropertyUser;
 use App\Modules\Comms\Models\ComplaintMessage;
+use App\Modules\Comms\Models\ServiceReview;
 
 class Complaint extends Model
 {
@@ -23,5 +24,10 @@ class Complaint extends Model
     public function messages()
     {
         return $this->hasMany(ComplaintMessage::class, 'complaint_id');
+    }
+
+    public function serviceReview()
+    {
+        return $this->hasOne(ServiceReview::class);
     }
 }

@@ -5,13 +5,20 @@ namespace App\Modules\Comms\Controllers;
 use App\Modules\Comms\Models\Notice;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Carbon\Carbon;
 
 class NoticesController extends Controller
 {
     // Get all notices
     public function index()
     {
-        return response()->json(Notice::with('user')->latest()->get());
+        $notices = Notice::with('user')->latest()->get();
+        foreach ($notices as $notice) {
+            $notice->user_name = $notice->user->name;
+            $notice->published_at_formatted = Carbon::parse($notice->published_at)->format('jS F Y');
+            $notice->expires_at_formatted = Carbon::parse($notice->expires_at)->format('jS F Y');
+        }
+        return response()->json($notices);
     }
 
     // Store a new notice
@@ -53,6 +60,7 @@ class NoticesController extends Controller
             'type' => 'sometimes|in:general,complaint,payment,maintenance,vacancy,audit',
             'published_at' => 'nullable|date',
             'expires_at' => 'nullable|date|after:published_at',
+            'status' => 'sometimes|string|in:Unread,Read,Archive'
         ]);
 
         $notice = Notice::find($id);

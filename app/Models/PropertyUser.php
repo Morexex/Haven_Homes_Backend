@@ -10,6 +10,7 @@ use App\Modules\Comms\Models\Complaint;
 use App\Modules\Comms\Models\Notice;
 use App\Modules\Comms\Models\Vacation;
 use App\Modules\Comms\Models\BulkCommunicationRecipient;
+use App\Modules\Comms\Models\ServiceReview;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class PropertyUser extends Authenticatable
@@ -46,6 +47,11 @@ class PropertyUser extends Authenticatable
     public function messages()
     {
         return $this->hasMany(BulkCommunicationRecipient::class, 'user_id', 'id');
+    }
+
+    public function reviews ()
+    {
+        return $this->hasMany(ServiceReview::class, 'user_id', 'id');
     }
 }
 
