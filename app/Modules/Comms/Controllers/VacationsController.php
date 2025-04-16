@@ -7,12 +7,19 @@ use App\Models\PropertyUser;
 use App\Modules\Property\Models\Room;
 use App\Modules\Comms\Models\Notice;
 use App\Http\Controllers\Controller;
+use Carbon\Carbon;
 
 class VacationsController extends Controller
 {
     // Get all vacation requests
     public function index()
     {
+        $vacations = Vacation::with('tenant', 'room')->latest()->get();
+        foreach ($vacations as $vacation ) {
+            $vacation->tenant_name = $vacation->tenant->name;
+            $vacation->room = $vaction->rooms->label;
+            $vacation->formatted_application_date = Carbon::parse($vacation->created_at)->format('jS F Y');
+        }
         return response()->json(Vacation::with('tenant', 'room')->latest()->get());
     }
 

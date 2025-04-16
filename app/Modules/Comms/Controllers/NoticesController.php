@@ -65,6 +65,15 @@ class NoticesController extends Controller
 
         $notice = Notice::find($id);
 
+        //if the status passed is Archive, then also save the axpiry date as 24 hrs from now
+        if (
+            isset($validated['status']) &&
+            $validated['status'] === 'Archive' &&
+            !isset($validated['expires_at'])
+        ) {
+            $validated['expires_at'] = now()->addDay();
+        }
+    
         $notice->update($validated);
 
         return response()->json(['message' => 'Notice updated successfully', 'data' => $notice]);
