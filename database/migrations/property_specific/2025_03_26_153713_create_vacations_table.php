@@ -17,6 +17,8 @@ return new class extends Migration
             $table->foreignId('room_id')->constrained('rooms')->onDelete('cascade');
             $table->text('reason')->nullable();
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
+            $table->string('proposed_vacation_date');
+            $table->string('actual_vacation_date')->nullable();
             $table->timestamps();
         });
     }

@@ -8,6 +8,7 @@ use App\Modules\Property\Models\Room;
 use App\Modules\Comms\Models\Notice;
 use App\Http\Controllers\Controller;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class VacationsController extends Controller
 {
@@ -17,29 +18,34 @@ class VacationsController extends Controller
         $vacations = Vacation::with('tenant', 'room')->latest()->get();
         foreach ($vacations as $vacation ) {
             $vacation->tenant_name = $vacation->tenant->name;
-            $vacation->room = $vaction->rooms->label;
+            $vacation->room_name = $vacation->room->label;
             $vacation->formatted_application_date = Carbon::parse($vacation->created_at)->format('jS F Y');
+            $vacation->proposed_vacation_date_formatted = Carbon::parse($vacation->proposed_vacation_date)->format('jS F Y');
         }
-        return response()->json(Vacation::with('tenant', 'room')->latest()->get());
+        return response()->json($vacations);
     }
 
     // Submit a new vacation request
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'tenant_id' => 'required|exists:users,id',
+            'tenant_id' => 'required|exists:property_users,id',
             'room_id' => 'required|exists:rooms,id',
             'reason' => 'nullable|string',
+            'proposed_vacation_date' => 'required|string',
         ]);
+
+        Log::info($validated);
 
         $vacation = Vacation::create($validated);
 
         $tenant_name = PropertyUser::find($validated['tenant_id'])->name;
+        $proposed_date = Carbon::parse($validated['proposed_vacation_date'])->format('jS F Y');
         $room_name = Room::find($validated['room_id'])->name;
         // Create a notification for the vacation request
         $noticeData = [
             'title' => 'New Vacation Request',
-            'message' => 'A new vacation request has been submitted by ' . $tenant_name . ' for room ' . $room_name,
+            'message' => 'A new vacation request has been submitted by ' . $tenant_name . ' for room ' . $room_name . 'proposed to vacate on:' .$proposed_date,
             'type' => 'vacation',
             'source_id' => $vacation->id,
             'source_type' => Vacation::class,
@@ -68,10 +74,14 @@ class VacationsController extends Controller
     }
 
     // Approve or reject a vacation request
-    public function update($id)
+    public function update(Request $request, $id)
     {
         $validated = $request->validate([
-            'status' => 'required|in:pending,approved,rejected',
+            'status' => 'nullable|in:pending,approved,rejected',
+            'actual_vacation_date' => 'nullable|string',
+            'room_id' => 'required|exists:rooms,id',
+            'reason' => 'nullable|string',
+            'proposed_vacation_date' => 'required|string',
         ]);
 
         $vacation = Vacation::find($id);
@@ -79,18 +89,25 @@ class VacationsController extends Controller
         $vacation->update($validated);
 
         // Create a notification for the vacation request status update
-        $noticeData = [
-            'title' => 'Vacation Request Status Update',
-            'message' => 'Your vacation request for room ' . $vacation->room->name . ' has been ' . $validated['status'],
-            'type' => 'vacation',
-            'source_id' => $vacation->id,
-            'source_type' => Vacation::class,
-            'user_id' => $vacation->tenant_id,
-            'published_at' => now(),
-        ];
+        if(!empty($validated['status']))
+        {
+            $noticeData = [
+                'title' => 'Vacation Request Status Update',
+                'message' => 'Your vacation request for room ' . $vacation->room->name . ' has been ' . $validated['status'],
+                'type' => 'vacation',
+                'source_id' => $vacation->id,
+                'source_type' => Vacation::class,
+                'user_id' => $vacation->tenant_id,
+                'published_at' => now(),
+            ];
+        }
 
         try {
-            $notice = Notice::create($noticeData);
+            if(!empty($validated['status'])){
+                $notice = Notice::create($noticeData);
+            } else {
+                return;
+            }
         } catch (\Exception $e) {
             return response()->json(['message' => 'Vacation status updated, but notice failed.', 'error' => $e->getMessage()], 500);
         }
